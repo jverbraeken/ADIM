@@ -45,7 +45,7 @@ for i=1:size(S,2)
     % warping from xref to the shape
     P = thin_plate_spline(xref,S(:,i),mask);
     % intensity sampling
-    G(:,i) = intensity_sampling(sprintf('%s/%s',path,fnames{i}),P);
+    G(:,i) = intensity_sampling(fnames{i},P);
     % display
     disp(sprintf('Sampling from %s is done.',fnames{i}));
 end
