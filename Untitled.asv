@@ -1,14 +1,17 @@
 %% Exercise 1.2
+clc; clear all; close all;
 S = gen_rectangles(50);
 S = importdata('shortaxes.mat');
+figure(1);
 plot_shapes(S,'Marker','none');
 Sa = align_all_shapes(S);
 Sb = align_all_shapes(S, 'tangent_projection',0);
 Sm = mean(Sa, 2);
-plot_shapes(Sa, '+b');
-hold on;
-plot_shapes(Sb, '.r');
-plot_shapes(Sm, '-k');
+Sm2 = mean(Sb, 2);
+figure(2);
+plot_shapes(Sa, '-b');
+figure(3);
+plot_shapes(Sm, '-b');
 
 %% Exercise 1.3
 %  S = importdata('shortaxes.mat');
@@ -18,54 +21,59 @@ plot_shapes(Sm, '-k');
 
  
 %% Exercise 1.4
-% S = importdata('shortaxes.mat');
-% Sa = align_all_shapes(S);
-% pca = compute_pca(Sa, 'reduce', 0.98)
-% shape_viewer(pca)
+S = importdata('shortaxes.mat');
+Sa = align_all_shapes(S);
+pca = compute_pca(Sa, 'reduce', 0.98);
+shape_viewer(pca)
 
 %% Exercise 1.5
-% S = importdata('shortaxes.mat');
-% %plot_shapes(S,'Marker','none');
-% Sa = align_all_shapes(S);
-% Sm = mean(Sa, 2);
-% pts = create_mask(Sm, 'extent',3);
-% plot(pts(:,1),pts(:,2),'r.');
-% hold on;
-% plot_shapes(Sm,'-b');
-% pt = thin_plate_spline(Sm,Sa(:,5),pts);
-% plot(pts(:,1),pts(:,2),'r.');
-% hold on;
-% plot_shapes(Sm, '-b');
-% figure;
-% plot(pt(:,1),pt(:,2),'r.');
-% hold on
-% plot_shapes(Sa(:,5),'-b');
+S = importdata('shortaxes.mat');
+%plot_shapes(S,'Marker','none');
+Sa = align_all_shapes(S);
+Sm = mean(Sa, 2);
+pts = create_mask(Sm, 'extent',3);
+plot(pts(:,1),pts(:,2),'r.');
+hold on;
+plot_shapes(Sm,'-b');
+pt = thin_plate_spline(Sm,Sa(:,5),pts);
+plot(pts(:,1),pts(:,2),'r.');
+hold on;
+plot_shapes(Sm, '-b');
+figure;
+plot(pt(:,1),pt(:,2),'r.');
+hold on
+plot_shapes(Sa(:,5),'-b');
 
 %% Exercise 1.6
 clear all; close all; clc;
 startup;
 S = importdata('shortaxes.mat');
 Sa = align_all_shapes(S);
-pca = compute_pca(Sa, 'reduce', 1);
+shape_pca = compute_pca(Sa, 'reduce', 1);
 Sm = mean(Sa, 2);
-pts = create_mask(Sm, 'extent', 1.1);
+mask = create_mask(Sm, 'extent', 1.1);
 fnames = importdata('samri_data/mri_sa.txt');
 G = [];
 for i = 1:length(fnames)
-    P = thin_plate_spline(pca.mean, S(:,i), pts);
+    P = thin_plate_spline(shape_pca.mean, S(:,i), mask);
     G(:,i) = intensity_sampling(fnames{i}, P);
     disp(sprintf('Sampling from %s', fnames{i}));
 end
 
-%figure;
-%plot_texture(pts, G(:,i));
+figure;
+plot_texture(mask, G(:,1));
+
+% QUESTION klopt het dat de texture wordt vervormd op basis van grid
+% points?
 
 %% Exercise 1.7
 Gn = photometric_normalization(G);
-figure(1)
-plot_texture(pts, G(:,10));
-figure(2)
-plot_texture(pts, Gn(:,10));
+figure(1);
+plot_texture(mask, G(:,10));
+figure(2);
+plot_texture(mask, Gn(:,10));
+
+% QUESTIONS we don't see any difference at all...
 
 %% Exercise 1.8
 clear all; close all; clc;
@@ -74,11 +82,11 @@ S = importdata('shortaxes.mat');
 Sa = align_all_shapes(S);
 pca_shape = compute_pca(Sa, 'reduce', 0.984);
 Sm = mean(Sa, 2);
-pts = create_mask(Sm, 'extent', 1.1);
+mask = create_mask(Sm, 'extent', 1.1);
 fnames = importdata('samri_data/mri_sa.txt');
 G = [];
 for i = 1:length(fnames)
-    P = thin_plate_spline(pca_shape.mean, S(:,i), pts);
+    P = thin_plate_spline(pca_shape.mean, S(:,i), mask);
     G(:,i) = intensity_sampling(fnames{i}, P);
     disp(sprintf('Sampling from %s', fnames{i}));
 end
@@ -114,17 +122,40 @@ clear all; close all; clc;
 startup;
 S = importdata('shortaxes.mat');
 Sa = align_all_shapes(S);
-%%
 shape_pca = compute_pca(Sa, 'reduce', 0.98);
 fnames = importdata('samri_data/mri_sa.txt');
 [G, mask] = generate_texture_samples(shape_pca.mean, S, fnames);
 Gn = photometric_normalization(G);
 texture_pca = compute_pca(Gn, 'reduce', 0.98);
 Ws = sqrt(sum(texture_pca.var) / sum(shape_pca.var));
-app_pca = compute_pca([Ws * shape_pca.b; texture_pca.b], 'reduce', 0.98);
+app_pca = compute_pca([Ws * shape_pca.b; texture_pca.b], 'remove_mean', 0, 'reduce', 0.98);
 % shape_mean = S(:, 1) - app_pca.phi * app_pca.b;
+
+% Mean
 plot_appearance(S, texture_pca.mean, shape_pca.mean, mask);
+
+% Original
 figure;
+plot_shapes(S(:, 1), '-r');
+
+% Reconstructed
+figure;
+tmp = shape_pca.phi * shape_pca.b;
+plot_shapes(shape_pca.mean + tmp(:, 1), '-b');
+
+%% Exercise 11
+clear all; close all; clc;
+startup;
+S = importdata('shortaxes.mat');
+Sa = align_all_shapes(S);
+shape_pca = compute_pca(Sa, 'reduce', 0.98);
+fnames = importdata('samri_data/mri_sa.txt');
+[G, mask] = generate_texture_samples(shape_pca.mean, S, fnames);
+Gn = photometric_normalization(G);
+texture_pca = compute_pca(Gn, 'reduce', 0.98);
+Ws = sqrt(sum(texture_pca.var) / sum(shape_pca.var));
+app_pca = compute_pca([Ws * shape_pca.b; texture_pca.b], 'remove_mean', 0, 'reduce', 0.98);
+appearance_viewer(shape_pca, texture_pca, app_pca, mask, Ws);
 
 %% Exercise 2.2
 clear all; close all; clc;
@@ -144,7 +175,14 @@ app_pca = compute_pca([Ws * shape_pca.b; texture_pca.b], 'reduce', 0.98);
 
 Rt = pose_prediction(shape_pca, texture_pca, app_pca, Ws, fnames, S, mask, 'select', 1:5);
 
-plot_texture(mask, Rt(1, :));  % Doesn't work
+figure(1);
+plot_texture(mask, Rt(1, :)');
+figure(2);
+plot_texture(mask, Rt(2, :)');
+figure(3);
+plot_texture(mask, Rt(3, :)');
+figure(4);
+plot_texture(mask, Rt(4, :)');
 
 %% Exercise 2.3
 clear all; close all; clc;
@@ -164,44 +202,32 @@ app_pca = compute_pca([Ws * shape_pca.b; texture_pca.b], 'reduce', 0.98);
 
 Rc = params_prediction(shape_pca, texture_pca, app_pca, Ws, fnames, S, mask, 'select', 1:3);
 
-plot_texture(mask, Rc(1, :));  % Doesn't work
+figure(1);
+plot_texture(mask, Rc(1, :)');
+figure(2);
+plot_texture(mask, Rc(2, :)');
 
 %% Exercise 2.4
-Rt = load('Rt50.mat');
-Rc = load('Rc50.mat');
+Rt = importdata('Rt50.mat');
+Rc = importdata('Rc50.mat');
 
 %% Exercise 2.5
-k = [1.5, 0.5, 0.25, 0.125, 0.0625]';
-P0 = 0; % Replace with exercise 2.2
-c = 0;
-x_m = shape_pca; % ?
-x_match = 0; % Depending on exercise 2.2
-while true
-    g_m = texture_pca;
-    g_im = 0; % Something with intensity sampling?
-    g_s = photometric_normalization(g_im);
-    d_g_0 = g_s - g_m;
-    E_0 = abs(d_g_0);
-    d_t = R_t * d_g_0; % R_t by using pose_prediction
-    d_c = R_c * d_g_0; % R_c by using params_prediction
-    for k = 1:5 % What is k?
-        c = c - k * d_c;
-        % ? No idea, what is this?
+clear all; close all; clc;
+startup;
 
-        %
-        %
-        % Here the same code as a few lines upwards
-        %
-        %
-        
-        E_i = abs(d_g_i);
-        if E_i < E_0
-            break;
-        end
-    end
-    if E == E_i
-        break;
-    else
-        E = E_i;
-    end
-end
+S = importdata('shortaxes.mat');
+Sa = align_all_shapes(S);
+shape_m = compute_pca(Sa, 'reduce', 0.98);
+
+fnames = importdata('samri_data/mri_sa.txt');
+[G, mask] = generate_texture_samples(shape_m.mean, S, fnames);
+Gn = photometric_normalization(G);
+texture_m = compute_pca(Gn, 'reduce', 0.98);
+
+Ws = sqrt(sum(texture_m.var) / sum(shape_m.var));
+app_m = compute_pca([Ws * shape_m.b; texture_m.b], 'remove_mean', 0, 'reduce', 0.98);
+
+% QUESTION: why does aam_matching.m give a white screen and an error?
+
+% Rt = pose_prediction(shape_m, texture_m, app_m, Ws, fnames, S, mask, 'select', 1:5);
+% Rc = params_prediction(shape_m, texture_m, app_m, Ws, fnames, S, mask, 'select', 1:3);

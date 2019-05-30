@@ -34,7 +34,7 @@ if( idx<1 || idx>length(ftest) ) error('Index is out of range.'); end
 
 % Load image
 warning off;
-img = double(dicomread(sprintf('samri_data/%s',ftest{idx})));
+img = double(imread(sprintf('samri_data/%s',ftest{idx})));
 warning on;
 disp(sprintf('Image %s has been loaded.',ftest{idx}));
 
