@@ -149,7 +149,6 @@ fnames = importdata('samri_data/mri_sa.txt');
 [G, mask] = generate_texture_samples(shape_pca.mean, S, fnames);
 Gn = photometric_normalization(G);
 texture_pca = compute_pca(Gn, 'reduce', 0.98);
-figure;
 Ws = sqrt(sum(texture_pca.var) / sum(shape_pca.var));
 app_pca = compute_pca([Ws * shape_pca.b; texture_pca.b], 'remove_mean', 0, 'reduce', 0.98);
 % shape_mean = S(:, 1) - app_pca.phi * app_pca.b;
